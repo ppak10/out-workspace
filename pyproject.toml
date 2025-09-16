@@ -1,6 +1,6 @@
 [project]
 name = "out-workspace"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name = "Peter Pak", email = "ppak10@gmail.com" },
 ]
@@ -20,6 +20,10 @@ Issues = "https://github.com/ppak10/out-workspace/issues"
 
 [project.scripts]
 ow = "ow.cli:app"
+
+[tool.setuptools.package-data]
+"ow.data" = ["**/*.md"]
+"ow" = ["py.typed"]
 
 [tool.black]
 line-length = 88
