@@ -2,7 +2,6 @@ import os
 
 from pathlib import Path
 
-from ow.workspace.model import Workspace
 from ow.workspace.utils import get_project_root
 
 
@@ -38,14 +37,14 @@ def list_workspace_subfolders(
     if not out_path.exists() or not out_path.is_dir():
         raise FileNotFoundError
 
-    workspace_dict_path = out_path / name / "workspace.json"
+    workspace_path = out_path / name
 
-    if not workspace_dict_path.exists():
+    if not workspace_path.exists() or not out_path.is_dir():
         raise FileNotFoundError
 
-    workspace = Workspace.load(workspace_dict_path)
-
-    return workspace.subfolders
+    return [
+        subfolder.name for subfolder in workspace_path.iterdir() if subfolder.is_dir()
+    ]
 
 
 def list_workspace_subfolder_content(
