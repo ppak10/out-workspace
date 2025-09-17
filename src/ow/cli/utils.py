@@ -6,7 +6,9 @@ from rich import print as rprint
 from .options import WorkspaceOption
 
 
-def get_workspace_path(workspace: WorkspaceOption) -> Path:
+def get_workspace_path(
+    workspace: WorkspaceOption, config_file: str = "workspace.json"
+) -> Path:
     """
     Checks for workspace config file in current directory or throws error.
     """
@@ -21,11 +23,11 @@ def get_workspace_path(workspace: WorkspaceOption) -> Path:
         # Check for workspace config file in current directory
         workspace_dir = Path.cwd()
 
-    config_file = workspace_dir / "config.json"
+    workspace_config_path = workspace_dir / config_file
 
-    if not config_file.exists():
+    if not workspace_config_path.exists():
         rprint(
-            f"❌ [red]This is not a valid workspace folder. `{config_file}` not found.[/red]"
+            f"❌ [red]This is not a valid workspace folder. `{workspace_config_path}` not found.[/red]"
         )
         raise typer.Exit(code=1)
 
