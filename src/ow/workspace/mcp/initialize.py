@@ -18,7 +18,7 @@ def register_workspace_initialize(app: FastMCP):
         force: bool = False,
     ) -> Union[ToolSuccess[Workspace], ToolError]:
         """Create a folder to store data related to a workspace."""
-        from ow.workspace.tools import create_workspace
+        from ow.workspace.tools.create import create_workspace
 
         try:
             workspace = create_workspace(name=workspace_name, force=force)

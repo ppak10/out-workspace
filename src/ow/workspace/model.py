@@ -14,6 +14,8 @@ class Workspace(BaseModel):
     name: str
     out_path: Path | None = None
     workspace_path: Path | None = None
+    subfolders: list[str] = []
+    config_file: str = "workspace.json"
 
     @field_validator("name", mode="before")
     @classmethod
@@ -32,6 +34,55 @@ class Workspace(BaseModel):
 
         return self
 
+    def create_subfolders(self) -> list[Path]:
+        """
+        Create subfolders defined in self.subfolders under workspace_path.
+        Returns a list of created Path objects.
+        """
+        if not self.workspace_path:
+            raise ValueError("workspace_path must be set before creating subfolders.")
+
+        created = []
+        for folder in self.subfolders:
+            folder_path = self.workspace_path / folder
+            folder_path.mkdir(parents=True, exist_ok=True)
+            created.append(folder_path)
+
+        self.save()
+        return created
+
+    def add_subfolder(self, subfolder_name: str) -> Path:
+        """
+        Add and create a new subfolder inside the workspace.
+
+        Args:
+            subfolder_name (str): Name of the subfolder to create.
+
+        Returns:
+            Path: The path of the created subfolder.
+
+        Raises:
+            ValueError: If the subfolder name contains path separators (nested paths not allowed).
+        """
+        if not self.workspace_path:
+            raise ValueError("workspace_path must be set before adding subfolders.")
+
+        # Check for nested paths (path separators)
+        if "/" in subfolder_name or "\\" in subfolder_name:
+            raise ValueError(
+                "Nested subfolder paths are not allowed. Use simple folder names only."
+            )
+
+        safe_name = self.normalize_and_sanitize_name(subfolder_name)
+        folder_path = self.workspace_path / safe_name
+        folder_path.mkdir(parents=True, exist_ok=True)
+
+        if safe_name not in self.subfolders:
+            self.subfolders.append(safe_name)
+
+        self.save()
+        return folder_path
+
     def save(self, path: Path | None = None) -> Path:
         """
         Save the configuration to a YAML file.
@@ -42,7 +93,7 @@ class Workspace(BaseModel):
                 raise ValueError(
                     "workspace_path must be set to determine save location."
                 )
-            path = self.workspace_path / "workspace.json"
+            path = self.workspace_path / self.config_file
 
         path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text(self.model_dump_json(indent=2))
@@ -52,6 +103,6 @@ class Workspace(BaseModel):
     @classmethod
     def load(cls: type["Workspace"], path: Path) -> "Workspace":
         if not path.exists():
-            raise FileNotFoundError(f"Config file not found at {path}")
+            raise FileNotFoundError(f"Workspace file not found at {path}")
 
         return cls.model_validate_json(path.read_text())

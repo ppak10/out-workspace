@@ -14,6 +14,8 @@ class TestWorkspace:
         assert workspace.name == "test_workspace"
         assert workspace.out_path is not None
         assert workspace.workspace_path is not None
+        assert workspace.subfolders == []
+        assert workspace.config_file == "workspace.json"
 
     def test_name_sanitization_spaces(self):
         workspace = Workspace(name="test workspace")
@@ -126,7 +128,7 @@ class TestWorkspace:
     def test_load_nonexistent_file(self):
         nonexistent_path = Path("/nonexistent/config.json")
 
-        with pytest.raises(FileNotFoundError, match="Config file not found"):
+        with pytest.raises(FileNotFoundError, match="Workspace file not found"):
             Workspace.load(nonexistent_path)
 
     def test_round_trip_save_and_load(self):
@@ -145,3 +147,165 @@ class TestWorkspace:
             assert loaded_workspace.name == original_workspace.name
             assert loaded_workspace.out_path == original_workspace.out_path
             assert loaded_workspace.workspace_path == original_workspace.workspace_path
+
+    def test_subfolders_default_value(self):
+        workspace = Workspace(name="test")
+        assert workspace.subfolders == []
+
+    def test_subfolders_custom_value(self):
+        workspace = Workspace(name="test", subfolders=["docs", "src", "tests"])
+        assert workspace.subfolders == ["docs", "src", "tests"]
+
+    def test_config_file_default_value(self):
+        workspace = Workspace(name="test")
+        assert workspace.config_file == "workspace.json"
+
+    def test_config_file_custom_value(self):
+        workspace = Workspace(name="test", config_file="custom.json")
+        assert workspace.config_file == "custom.json"
+
+    def test_create_subfolders_success(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(
+                name="test",
+                workspace_path=workspace_path,
+                subfolders=["docs", "src", "tests"],
+            )
+
+            created_paths = workspace.create_subfolders()
+
+            assert len(created_paths) == 3
+            assert workspace_path / "docs" in created_paths
+            assert workspace_path / "src" in created_paths
+            assert workspace_path / "tests" in created_paths
+
+            # Verify directories were actually created
+            assert (workspace_path / "docs").exists()
+            assert (workspace_path / "src").exists()
+            assert (workspace_path / "tests").exists()
+
+    def test_create_subfolders_empty_list(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            created_paths = workspace.create_subfolders()
+
+            assert created_paths == []
+
+    def test_create_subfolders_without_workspace_path(self):
+        workspace = Workspace(name="test", workspace_path=None, subfolders=["docs"])
+        workspace.workspace_path = None  # Explicitly set to None after validation
+
+        with pytest.raises(
+            ValueError, match="workspace_path must be set before creating subfolders"
+        ):
+            workspace.create_subfolders()
+
+    def test_create_subfolders_with_nested_paths(self):
+        # Note: create_subfolders still supports nested paths for existing configurations
+        # but add_subfolder now prevents creating new nested paths
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(
+                name="test",
+                workspace_path=workspace_path,
+                subfolders=["src/main", "tests/unit"],
+            )
+
+            created_paths = workspace.create_subfolders()
+
+            assert len(created_paths) == 2
+            assert (workspace_path / "src/main").exists()
+            assert (workspace_path / "tests/unit").exists()
+
+    def test_add_subfolder_success(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            folder_path = workspace.add_subfolder("new_folder")
+
+            assert folder_path == workspace_path / "new_folder"
+            assert folder_path.exists()
+            assert "new_folder" in workspace.subfolders
+
+    def test_add_subfolder_with_spaces(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            folder_path = workspace.add_subfolder("my folder")
+
+            assert folder_path == workspace_path / "my_folder"
+            assert folder_path.exists()
+            assert "my_folder" in workspace.subfolders
+
+    def test_add_subfolder_with_special_characters(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            # Test special characters excluding path separators (/ and \)
+            folder_path = workspace.add_subfolder('folder<>:"|?*')
+
+            assert folder_path == workspace_path / "folder"
+            assert folder_path.exists()
+            assert "folder" in workspace.subfolders
+
+    def test_add_subfolder_duplicate_name(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(
+                name="test", workspace_path=workspace_path, subfolders=["existing"]
+            )
+
+            folder_path = workspace.add_subfolder("existing")
+
+            assert folder_path == workspace_path / "existing"
+            assert folder_path.exists()
+            # Should not duplicate in the list
+            assert workspace.subfolders.count("existing") == 1
+
+    def test_add_subfolder_without_workspace_path(self):
+        workspace = Workspace(name="test", workspace_path=None)
+        workspace.workspace_path = None  # Explicitly set to None after validation
+
+        with pytest.raises(
+            ValueError, match="workspace_path must be set before adding subfolders"
+        ):
+            workspace.add_subfolder("test_folder")
+
+    def test_add_subfolder_nested_path_raises_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            with pytest.raises(
+                ValueError, match="Nested subfolder paths are not allowed"
+            ):
+                workspace.add_subfolder("src/components")
+
+    def test_add_subfolder_backslash_path_raises_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            with pytest.raises(
+                ValueError, match="Nested subfolder paths are not allowed"
+            ):
+                workspace.add_subfolder("src\\components")
+
+    def test_add_subfolder_long_name_truncation(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace_path = Path(tmp_dir) / "test_workspace"
+            workspace = Workspace(name="test", workspace_path=workspace_path)
+
+            long_name = "a" * 300
+            folder_path = workspace.add_subfolder(long_name)
+            expected_name = "a" * 255
+
+            assert folder_path == workspace_path / expected_name
+            assert folder_path.exists()
+            assert expected_name in workspace.subfolders
