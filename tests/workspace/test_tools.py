@@ -73,7 +73,7 @@ class TestCreateWorkspace:
             out_path = Path(temp_dir)
             workspace_name = "test_workspace"
 
-            workspace = create_workspace(out_path, workspace_name)
+            workspace = create_workspace(workspace_name, out_path)
 
             assert isinstance(workspace, Workspace)
             assert workspace.name == workspace_name
@@ -87,7 +87,7 @@ class TestCreateWorkspace:
 
             assert not out_path.exists()
 
-            workspace = create_workspace(out_path, workspace_name)
+            workspace = create_workspace(workspace_name, out_path)
 
             assert out_path.exists()
             assert out_path.is_dir()
@@ -103,7 +103,7 @@ class TestCreateWorkspace:
             workspace_path.mkdir(parents=True)
 
             with pytest.raises(FileExistsError, match="Workspace already exists"):
-                create_workspace(out_path, workspace_name)
+                create_workspace(workspace_name, out_path)
 
     def test_create_workspace_existing_workspace_with_force_succeeds(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -114,7 +114,7 @@ class TestCreateWorkspace:
             # Create existing workspace directory
             workspace_path.mkdir(parents=True)
 
-            workspace = create_workspace(out_path, workspace_name, force=True)
+            workspace = create_workspace(workspace_name, out_path, force=True)
 
             assert isinstance(workspace, Workspace)
             assert workspace.name == workspace_name
@@ -124,7 +124,7 @@ class TestCreateWorkspace:
             out_path = Path(temp_dir)
             workspace_name = "test workspace with spaces"
 
-            workspace = create_workspace(out_path, workspace_name)
+            workspace = create_workspace(workspace_name, out_path)
 
             # The Workspace model should sanitize the name
             assert workspace.name == "test_workspace_with_spaces"
