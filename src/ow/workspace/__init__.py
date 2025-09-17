@@ -1,4 +1,3 @@
-from .__main__ import Workspace
-from .config import WorkspaceConfig
+from .model import Workspace
 
-__all__ = ["Workspace", "WorkspaceConfig"]
+__all__ = ["Workspace"]

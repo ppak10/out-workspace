@@ -19,7 +19,7 @@ def register_workspace_list(app: FastMCP):
         structured_output=True,
     )
     def workspaces() -> ToolSuccess[list[str] | None]:
-        from ow.workspace.list import list_workspaces
+        from ow.workspace.tools import list_workspaces
 
         return tool_success(list_workspaces())
 
@@ -67,7 +67,7 @@ def register_workspace_list_resources(app: FastMCP):
 
     @app.resource("workspace://")
     def workspace_list() -> list[str] | None:
-        from ow.workspace.list import list_workspaces
+        from ow.workspace.tools import list_workspaces
 
         return list_workspaces()
 
