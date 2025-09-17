@@ -27,10 +27,20 @@ def list_workspaces(out_path: Path | None = None) -> list[str] | None:
     ]
 
 
-def create_workspace(out_path: Path, name: str, force: bool = False) -> Workspace:
+def create_workspace(
+    name: str,
+    out_path: Path | None = None,
+    force: bool = False,
+    **kwargs,
+) -> Workspace:
     """
     Create Workspace class object and folder.
     """
+
+    # Use the out_path if provided, otherwise default to package out_path.
+    if out_path is None:
+        out_path = get_project_root() / "out"
+
     # Create the `out` directory if it doesn't exist.
     out_path.mkdir(exist_ok=True)
 
@@ -39,6 +49,7 @@ def create_workspace(out_path: Path, name: str, force: bool = False) -> Workspac
     if workspace_path.exists() and not force:
         raise FileExistsError("Workspace already exists")
 
-    workspace = Workspace(name=name, out_path=out_path)
+    workspace = Workspace(name=name, out_path=out_path, **kwargs)
+    workspace.save()
 
     return workspace

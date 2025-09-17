@@ -12,9 +12,9 @@ def get_workspace_path(workspace: WorkspaceOption) -> Path:
     """
     if workspace is not None:
         # Get workspace path from name.
-        from ow.workspace import WorkspaceConfig
+        from ow.workspace.utils import get_project_root
 
-        project_root = WorkspaceConfig.get_project_root_from_package()
+        project_root = get_project_root()
         workspace_dir = project_root / "out" / workspace
 
     else:

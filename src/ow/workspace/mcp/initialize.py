@@ -6,7 +6,7 @@ from typing import Union
 def register_workspace_initialize(app: FastMCP):
     from ow.mcp.types import ToolSuccess, ToolError
     from ow.mcp.utils import tool_success, tool_error
-    from ow.workspace import Workspace
+    from ow.workspace.model import Workspace
 
     @app.tool(
         title="Initialize Workspace",
@@ -18,12 +18,11 @@ def register_workspace_initialize(app: FastMCP):
         force: bool = False,
     ) -> Union[ToolSuccess[Workspace], ToolError]:
         """Create a folder to store data related to a workspace."""
-        from ow.workspace import Workspace
+        from ow.workspace.tools import create_workspace
 
         try:
-            workspace = Workspace(name=workspace_name)
-            workspace_config = workspace.create_workspace(force=force)
-            return tool_success(workspace_config)
+            workspace = create_workspace(name=workspace_name, force=force)
+            return tool_success(workspace)
 
         except PermissionError as e:
             return tool_error(
